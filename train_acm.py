@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 import scipy.io
 import urllib.request
 import dgl
@@ -17,8 +11,6 @@ urllib.request.urlretrieve(data_url, data_file_path)
 data = scipy.io.loadmat(data_file_path)
 
 
-# In[2]:
-
 
 G = dgl.heterograph({
         ('paper', 'written-by', 'author') : data['PvsA'],
@@ -29,10 +21,6 @@ G = dgl.heterograph({
         ('subject', 'has', 'paper') : data['PvsL'].transpose(),
     })
 print(G)
-
-
-# In[3]:
-
 
 pvc = data['PvsC'].tocsr()
 p_selected = pvc.tocoo()
@@ -46,10 +34,6 @@ shuffle = np.random.permutation(pid)
 train_idx = torch.tensor(shuffle[0:800]).long()
 val_idx = torch.tensor(shuffle[800:900]).long()
 test_idx = torch.tensor(shuffle[900:]).long()
-
-
-# In[26]:
-
 
 device = torch.device("cuda:0")
 G.node_dict = {}
@@ -70,10 +54,6 @@ for ntype in G.ntypes:
 model = HGT(G, n_inp=400, n_hid=200, n_out=labels.max().item()+1, n_layers=2, n_heads=4, use_norm = True).to(device)
 optimizer = torch.optim.AdamW(model.parameters())
 scheduler = torch.optim.lr_scheduler.OneCycleLR(optimizer, total_steps=100, max_lr = 1e-3, pct_start=0.05)
-
-
-# In[27]:
-
 
 best_val_acc = 0
 best_test_acc = 0
@@ -108,4 +88,3 @@ for epoch in range(100):
             test_acc.item(),
             best_test_acc.item(),
         ))
-
