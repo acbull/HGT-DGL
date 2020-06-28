@@ -85,7 +85,7 @@ class HGTLayer(nn.Module):
                 G.nodes[ntype].data[out_key] = self.drop(trans_out)
                 
 class HGT(nn.Module):
-    def __init__(self, G, n_inp, n_hid, n_out, n_layers, n_heads, init_emb = False, use_norm = True):
+    def __init__(self, G, n_inp, n_hid, n_out, n_layers, n_heads, use_norm = True):
         super(HGT, self).__init__()
         self.gcs = nn.ModuleList()
         self.n_inp = n_inp
@@ -98,15 +98,7 @@ class HGT(nn.Module):
         for _ in range(n_layers):
             self.gcs.append(HGTLayer(n_hid, n_hid, len(G.node_dict), len(G.edge_dict), n_heads, use_norm = use_norm))
         self.out = nn.Linear(n_hid, n_out)
-        if init_emb:
-            self.init_input_embedding(G)
-    def init_input_embedding(self, G):
-        self.init_emb = nn.ParameterList()
-        for ntype in G.ntypes:
-            emb = nn.Parameter(torch.Tensor(G.number_of_nodes(ntype), self.n_inp), requires_grad = False)
-            nn.init.xavier_uniform_(emb)
-            self.init_emb.append(emb)
-            G.nodes[ntype].data['inp'] = emb
+
     def forward(self, G, out_key):
         for ntype in G.ntypes:
             n_id = G.node_dict[ntype]
