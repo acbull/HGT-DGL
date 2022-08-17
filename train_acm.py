@@ -3,23 +3,27 @@ import urllib.request
 import dgl
 import math
 import numpy as np
+
 from model import *
-data_url = 'https://s3.us-east-2.amazonaws.com/dgl.ai/dataset/ACM.mat'
-data_file_path = '/tmp/ACM.mat'
+from dgl.data.utils import download, get_download_dir, _get_dgl_url
+from scipy import sparse
+from scipy import io as sio
 
-urllib.request.urlretrieve(data_url, data_file_path)
-data = scipy.io.loadmat(data_file_path)
+url = 'dataset/ACM.mat'
+data_path = get_download_dir() + '/ACM.mat'
+download(_get_dgl_url(url), path=data_path)
 
-
+data = sio.loadmat(data_path)
 
 G = dgl.heterograph({
-        ('paper', 'written-by', 'author') : data['PvsA'],
-        ('author', 'writing', 'paper') : data['PvsA'].transpose(),
-        ('paper', 'citing', 'paper') : data['PvsP'],
-        ('paper', 'cited', 'paper') : data['PvsP'].transpose(),
-        ('paper', 'is-about', 'subject') : data['PvsL'],
-        ('subject', 'has', 'paper') : data['PvsL'].transpose(),
-    })
+    ('paper', 'written-by', 'author'): data['PvsA'].nonzero(),
+    ('author', 'writing', 'paper'): data['PvsA'].transpose().nonzero(),
+    ('paper', 'citing', 'paper'): data['PvsP'].nonzero(),
+    ('paper', 'cited', 'paper'): data['PvsP'].transpose().nonzero(),
+    ('paper', 'is-about', 'subject'): data['PvsL'].nonzero(),
+    ('subject', 'has', 'paper'): data['PvsL'].transpose().nonzero(),
+})
+
 print(G)
 
 pvc = data['PvsC'].tocsr()
@@ -44,6 +48,8 @@ for etype in G.etypes:
     G.edge_dict[etype] = len(G.edge_dict)
     G.edges[etype].data['id'] = torch.ones(G.number_of_edges(etype), dtype=torch.long) * G.edge_dict[etype] 
     
+G = G.to(device)
+
 #     Random initialize input feature
 for ntype in G.ntypes:
     emb = nn.Parameter(torch.Tensor(G.number_of_nodes(ntype), 400), requires_grad = False).to(device)
